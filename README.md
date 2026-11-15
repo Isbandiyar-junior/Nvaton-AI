@@ -1,24 +1,24 @@
-# Köməkçi: səsli köməkçi "Əli" (MVP)
+# Köməkçi: voice assistant "Ali" (MVP)
 
-Yaşlı insanlar üçün Azərbaycan dilində səsli köməkçi. Əli səslə WhatsApp mesajı göndərir, zəng edir, kamera ilə dərman qutusunu oxuyur və fırıldaq SMS-lərindən xəbərdar edir.
+A voice assistant in Azerbaijani for elderly people. With voice, Ali sends WhatsApp messages, makes calls, reads medicine boxes with the camera, and warns about scam SMS messages.
 
-Plan, arxitektura və demo ssenarisi: [MVP_PLAN.md](MVP_PLAN.md).
+Plan, architecture and demo script: [MVP_PLAN.md](MVP_PLAN.md).
 
 ```
 NVATON/
-├── backend/   Node.js + TypeScript + Express. Gemini (və ya Claude) və Azure açarları burada saxlanılır
-└── android/   Kotlin + Jetpack Compose tətbiqi
+├── backend/   Node.js + TypeScript + Express. Gemini (or Claude) and Azure keys are stored here
+└── android/   Kotlin + Jetpack Compose app
 ```
 
-## Tələblər
+## Requirements
 
-- Node.js 20.12+ (backend üçün)
-- Android Studio (və ya JDK 17/21 + Android SDK 36)
-- Android 8.0+ telefon. Avtomatik "Göndər" üçün telefonda WhatsApp olmalıdır
-- [Gemini API açarı](https://aistudio.google.com/apikey) (Google AI Studio, pulsuz planı var). Alternativ: [Claude API açarı](https://platform.claude.com/)
-- İstəyə bağlı: [Azure Speech](https://azure.microsoft.com/products/ai-services/speech-services) açarı (pulsuz F0 planı kifayətdir). Əlinin təbii Azərbaycan səsi bundan gəlir, nitq tanımanı da Gemini-dən daha dəqiq edə bilər
+- Node.js 20.12+ (for the backend)
+- Android Studio (or JDK 17/21 + Android SDK 36)
+- An Android 8.0+ phone. WhatsApp must be installed on the phone for automatic "Send"
+- A [Gemini API key](https://aistudio.google.com/apikey) (Google AI Studio, has a free plan). Alternative: a [Claude API key](https://platform.claude.com/)
+- Optional: an [Azure Speech](https://azure.microsoft.com/products/ai-services/speech-services) key (the free F0 plan is enough). This provides Ali's natural Azerbaijani voice, and it can also make speech recognition more accurate than Gemini
 
-## 1. Backend-i işə salmaq
+## 1. Starting the backend
 
 ```bash
 cd backend
@@ -26,194 +26,194 @@ npm install
 cp .env.example .env
 ```
 
-`.env` faylında `GEMINI_API_KEY=` sətrinə öz açarınızı yazın, sonra:
+In the `.env` file, put your key after `GEMINI_API_KEY=`, then run:
 
 ```bash
 npm run dev
 ```
 
-`npm run dev` kod dəyişəndə serveri özü yenidən başladır. `.env`-i dəyişəndən sonra isə serveri əl ilə yenidən başladın: terminalda **Ctrl+C**, sonra yenə `npm run dev`.
+`npm run dev` restarts the server automatically when code changes. After changing `.env`, restart the server manually: press **Ctrl+C** in the terminal, then run `npm run dev` again.
 
-Bu terminalı açıq saxlayın: server işlədikcə orada qalır. Növbəti əmrləri **ayrıca terminal tabında** işlədin (VS Code-da terminal panelindəki **+** düyməsi). İşləyən serverin pəncərəsinə yazılan əmr icra olunmur.
+Keep this terminal open, because the server stays running there. Run the next commands in a **separate terminal tab** (the **+** button in the terminal panel of VS Code). Commands typed into the running server's window are not executed.
 
-`AI (gemini): ready` və `Speech recognition: Gemini` yazıları görünməlidir (Azure açarı varsa, nitq tanıma `Azure (az-AZ)` olur və `Azure TTS: ready` də çıxır). Açar olmasa da server işləyir: tətbiq sadə əmrləri (mesaj, zəng, kamera açmaq, fırıldaq qaydaları) telefonda özü başa düşür, yalnız süni intellekt tələb edən hissələr işləmir.
+You should see `AI (gemini): ready` and `Speech recognition: Gemini`. If you add an Azure key, speech recognition becomes `Azure (az-AZ)` and `Azure TTS: ready` also appears. The server also runs without any keys: the app understands simple commands (messages, calls, opening the camera, scam rules) on the phone itself, and only the parts that need AI do not work.
 
-| Dəyişən | Nə üçün |
+| Variable | Purpose |
 |---|---|
-| `GEMINI_API_KEY` | Gemini: mürəkkəb əmrlər, şəkil oxuma, fırıldaq yoxlaması və Azərbaycan dilində nitq tanıma |
-| `GEMINI_MODEL`, `GEMINI_VISION_MODEL` | Standart olaraq əmrlər, fırıldaq və nitq üçün `gemini-3.5-flash-lite` (ölçdük: ~1–3 san), kamera üçün `gemini-3.6-flash` (~6–9 san). `gemini-3.8-flash` pulsuz planda 75 saniyə çəkdi, səsli köməkçi üçün yaramır. `gemini-flash-latest` kimi `-latest` adları bu SDK-nın istifadə etdiyi `v1` API-də yoxdur |
-| `ANTHROPIC_API_KEY`, `AI_PROVIDER=claude` | Gemini əvəzinə Claude istifadə etmək üçün (standart model `claude-opus-5-5`) |
-| `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Əlinin təbii Azərbaycan səsi (`az-AZ-BanuNeural`). Qoşulanda nitq tanıma da Gemini yerinə Azure-un `az-AZ` modeli ilə gedir. Boş qalsa, telefonun öz səsi işləyir |
-| `HOST`, `APP_TOKEN` | Telefonu USB yerinə Wi-Fi ilə qoşmaq üçün (aşağıya baxın) |
+| `GEMINI_API_KEY` | Gemini: complex commands, reading images, scam checks, and Azerbaijani speech recognition |
+| `GEMINI_MODEL`, `GEMINI_VISION_MODEL` | By default, `gemini-3.5-flash-lite` for commands, scam checks and speech (measured: ~1–3 s), and `gemini-3.6-flash` for the camera (~6–9 s). `gemini-3.8-flash` took 75 seconds on the free plan, which is too slow for a voice assistant. `-latest` names such as `gemini-flash-latest` do not exist in the `v1` API this SDK uses |
+| `ANTHROPIC_API_KEY`, `AI_PROVIDER=claude` | To use Claude instead of Gemini (default model `claude-opus-5-5`) |
+| `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Ali's natural Azerbaijani voice (`az-AZ-BanuNeural`). When set, speech recognition also uses Azure's `az-AZ` model instead of Gemini. If left empty, the phone's own voice is used |
+| `HOST`, `APP_TOKEN` | For connecting the phone over Wi-Fi instead of USB (see below) |
 
-> **Nitq tanıma barədə vacib qeyd.** Google-un telefon daxilindəki nitq tanıyıcısında Azərbaycan dili modeli yoxdur (emulyatorda yoxladıq: `does not support locale: az-AZ`). Ona görə serverdə Gemini (və ya Azure) açarı olanda tətbiq səsi yazıb serverə göndərir və səs orada Azərbaycan dilində tanınır. Server açarı olmasa, telefonun tanıyıcısı sınanır. Alınmasa, «Yazaraq əmr ver» sahəsi həmişə işləyir.
+> **Important note on speech recognition.** Google's built-in phone speech recognizer has no Azerbaijani model (we checked on the emulator: `does not support locale: az-AZ`). That is why, when a Gemini or Azure key is set on the server, the app records speech, sends it to the server, and recognizes it there in Azerbaijani. If there is no server key, the phone's recognizer is tried. If that fails too, the "Type a command" field always works.
 
-## 2. Cihazı qoşmaq və tətbiqi yükləmək
+## 2. Connecting the device and installing the app
 
-**a) `adb` və `emulator` əmrlərini PATH-ə əlavə edin** (macOS, bir dəfə). Yoxsa `zsh: command not found: adb` xətası çıxır:
+**a) Add `adb` and `emulator` to your PATH** (macOS, once). Otherwise you get the error `zsh: command not found: adb`:
 
 ```bash
 echo 'export PATH="$HOME/Library/Android/sdk/platform-tools:$HOME/Library/Android/sdk/emulator:$PATH"' >> ~/.zshrc && source ~/.zshrc
 ```
 
-**b) Cihazı qoşun.** Cihaz olmasa, quraşdırma `No connected devices!` xətası ilə dayanır.
+**b) Connect a device.** Without a device, the installation stops with `No connected devices!`.
 
-- **Real telefon** (demo üçün bu lazımdır, çünki WhatsApp və mikrofon orada işləyir): Parametrlər → Telefon haqqında → «Build number» sətrinə 7 dəfə toxunun → Developer options → **USB debugging**-i aktiv edin. Telefonu USB ilə qoşun və telefonda «Allow USB debugging» sualına **Allow** deyin.
-- **Emulyator:** bu skript emulyatoru Mac-in kamerası (telefonun kamerası kimi) və Mac-in mikrofonu ilə açır:
+- **Real phone** (needed for the demo, because WhatsApp and the microphone work there): Settings → About phone → tap "Build number" 7 times → Developer options → enable **USB debugging**. Connect the phone with USB and tap **Allow** when the phone asks "Allow USB debugging".
+- **Emulator:** this script starts the emulator using your Mac's camera (as the phone camera) and your Mac's microphone:
 
 ```bash
 scripts/emulator.sh
 ```
 
-İlk dəfə macOS kamera və mikrofon icazəsi soruşa bilər, **Allow** deyin. Android Studio → Device Manager → ▶ ilə açsanız, Mac mikrofonu söndürülmüş olur. Onu emulyatorun ⋯ → Microphone → «Virtual microphone uses host audio input» açarı ilə yandırın. Cihazın görünüb-görünmədiyini yoxlayın:
+macOS may ask for camera and microphone permission the first time. Tap **Allow**. If you start the emulator from Android Studio → Device Manager → ▶, the Mac microphone is turned off. Turn it on from the emulator's ⋯ → Microphone → "Virtual microphone uses host audio input" switch. Check that the device is visible:
 
 ```bash
 adb devices
 ```
 
-Siyahıda `device` yazılmış bir sətir olmalıdır.
+One line should show `device`.
 
-**c) «Əli» sözünü tanıyan oflayn modeli endirin** (layihəni yükləyəndən sonra bir dəfə, ~37 MB). Model olmasa, tətbiq yenə işləyir, sadəcə adı eşidəndə özü işə düşmür:
+**c) Download the offline wake-word model** ("Ali") once, after cloning the project (~37 MB). Without the model, the app still works, but it cannot start by itself when it hears the name:
 
 ```bash
 scripts/get-wake-model.sh
 ```
 
-**d) Tətbiqi yükləyin.** Android Studio ilə: File → Open → `android/` qovluğu → ▶ Run. Ya da terminalla:
+**d) Install the app.** In Android Studio: File → Open → the `android/` folder → ▶ Run. Or from the terminal:
 
 ```bash
 cd /Users/farid/NVATON/android && JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew installDebug
 ```
 
-## 3. Telefonu backend-ə qoşmaq
+## 3. Connecting the phone to the backend
 
-Cihaz USB ilə qoşuludursa (emulyatorda da işləyir):
+If the device is connected with USB (this also works with the emulator):
 
 ```bash
 adb reverse tcp:8787 tcp:8787
 ```
 
-Bu əmri cihazı hər dəfə yenidən qoşanda, emulyatoru yenidən açanda və `adb kill-server`-dən sonra təkrarlayın.
+Run this command again every time you reconnect the device, restart the emulator, or run `adb kill-server`.
 
-Həm telefon, həm emulyator qoşuludursa, adi `adb reverse` "more than one device" xətası verir. Cihazı göstərin: `-d` USB telefon, `-e` emulyator:
+If both a phone and an emulator are connected, plain `adb reverse` gives a "more than one device" error. Choose the device: `-d` for the USB phone, `-e` for the emulator:
 
 ```bash
 adb -d reverse tcp:8787 tcp:8787
 ```
 
-Tətbiq standart olaraq `http://127.0.0.1:8787` ünvanına müraciət edir, bu əmr həmin ünvanı noutbukdakı serverə yönləndirir.
+By default, the app connects to `http://127.0.0.1:8787`. This command forwards that address to the server on your laptop.
 
-**Wi-Fi ilə qoşmaq:** `.env`-də `HOST=0.0.0.0` və `APP_TOKEN=gizli-söz` yazın, serveri yenidən başladın. Sonra tətbiqdə ⚙️ → Server bölməsində `http://<noutbukun-IP>:8787` ünvanını və həmin tokeni yazın. Token olmasa, eyni Wi-Fi-dakı hər kəs sizin Gemini açarınızdan istifadə edə bilər.
+**Connecting over Wi-Fi:** in `.env`, set `HOST=0.0.0.0` and `APP_TOKEN=secret-word`, then restart the server. In the app, go to ⚙️ → Server and enter `http://<your-laptop-IP>:8787` and the same token. Without a token, anyone on the same Wi-Fi can use your Gemini key.
 
-## 4. Telefonda quraşdırma (bir dəfə)
+## 4. Phone setup (once)
 
-Tətbiqdə ⚙️ → **Quraşdırma** bölməsində hər ❌ sətrin yanındakı **Aç** düyməsini basın:
+In the app, go to ⚙️ → **Setup** and tap **Open** next to each ❌ line:
 
-1. **Mikrofon, kamera, zəng, bildirişlər:** icazə verin.
-2. **Fırıldaq qoruması:** "Bildirişlərə giriş" siyahısında **Köməkçi: fırıldaq qoruması**nı aktiv edin.
-3. **WhatsApp-da avtomatik «Göndər» və ekranı oxumaq:** Əlçatımlılıq → **Köməkçi**ni aktiv edin. Eyni icazə hər iki iş üçündür.
+1. **Microphone, camera, calls, notifications:** allow them.
+2. **Scam protection:** in the "Notification access" list, enable **Köməkçi: scam protection**.
+3. **Automatic "Send" in WhatsApp and screen reading:** Accessibility → enable **Köməkçi**. The same permission is used for both tasks.
 
-> **Açar bozdursa (Android 13+):** Parametrlər → Tətbiqlər → Köməkçi → sağ yuxarıda ⋮ → **Məhdud parametrlərə icazə ver**. Sonra 2-ci və 3-cü addımı təkrarlayın.
+> **If the setting is greyed out (Android 13+):** Settings → Apps → Köməkçi → ⋮ in the top right → **Allow restricted settings**. Then repeat steps 2 and 3.
 >
-> Tətbiqi yenidən yükləyəndə Android Əlçatımlılıq xidmətini söndürə bilər. Hər quraşdırmadan sonra ⚙️ → Quraşdırma bölməsinə baxın.
+> After reinstalling the app, Android may turn off the Accessibility service. Check ⚙️ → Setup after every installation.
 
-> **Xiaomi / Redmi (HyperOS, MIUI):** USB debugging üçün Telefon haqqında → **HyperOS versiyası**na 7 dəfə toxunun, sonra Əlavə parametrlər → Developer options → **USB debugging**. Kabeli taxanda USB rejimini **Fayl ötürmə** edin. «Əli»ni arxa planda eşitməsi üçün Tətbiqlər → Köməkçi → **Avtomatik başlama** açıq, **Batareyaya qənaət** «Məhdudiyyət yoxdur» olsun.
+> **Xiaomi / Redmi (HyperOS, MIUI):** for USB debugging, go to About phone → tap **HyperOS version** 7 times, then Additional settings → Developer options → **USB debugging**. When you plug in the cable, set the USB mode to **File transfer**. So that Ali can hear you in the background, go to Apps → Köməkçi → turn on **Autostart**, and set **Battery saver** to "No restrictions".
 
-4. **Ailə kontaktları:** demo kontaktların nömrələri saxtadır (`+994 00 ...`). Onları silib komanda üzvlərinin real nömrələrini yazın. "Necə çağırılır" sahəsinə `nəvəm`, `qızım` kimi sözlər yazın.
+4. **Family contacts:** the demo contact numbers are fake (`+994 00 ...`). Delete them and enter your team members' real numbers. In the "How it's called" field, enter words such as `nəvəm` (my grandson) or `qızım` (my daughter).
 
-## 5. Demo əmrləri
+## 5. Demo commands
 
-Düyməni basmadan **"Əli"** deyə bilərsiniz (aşağıdakı bölməyə baxın). Düymə ilə də işləyir.
+You can say **"Əli"** without pressing a button (see the section below). The button also works.
 
-| Deyin | Nə olur |
+| Say | What happens |
 |---|---|
-| *"Əli"* … *"nəvəmə yaz: salam"* | *"Bəli?"* → *"Kimə yazım: Murada, yoxsa Aysuya?"* → *"Murada"* → *"Murada «Salam» yazım?"* → *"Hə"* → WhatsApp-da göndərilir |
-| *"Əli, nəvəmə yaz: salam"* (bir nəfəsdə) | "Bəli?" demədən dərhal *"Kimə yazım…"* |
-| *"Qızıma de ki axşam gəlsin"* | *"Leylaya «Axşam gəlsin» yazım?"* |
-| *"Əli, qızıma WhatsApp-dan salam yaz və göndər"* | *"Leylaya «Salam» yazım?"*: «və göndər» və «WhatsApp-dan» mesaja düşmür |
-| *"Oğluma zəng et"* | Zəng edir |
-| *"Əli, WhatsApp-dan Kamrana yaz ki sabah görüşək"* | Ailə siyahısında olmayan istənilən adama yazır: əvvəl telefonun kontaktlarında, sonra WhatsApp axtarışında tapır. *"Ailə qrupuna yaz: axşam gəlin"* qruplar üçün də işləyir. Göndərməzdən əvvəl yenə soruşur |
-| *"Əli, Rauf adlı yeni kontakt saxla, nömrəsi sıfır əlli, yüz iyirmi üç, qırx beş, altmış yeddi"* | Nömrəni geri oxuyur (*"Rauf, 050 123 45 67. Yadda saxlayım?"*), «hə»dən sonra saxlayır. İnteqrasiya açıqdırsa, telefonun kontaktlarına da yazır. Ad və ya nömrə çatışmırsa, soruşur |
-| Həmin nömrə başqa adla varsa | *"Bu nömrə artıq «Murad» adı ilə var. Köhnəni saxlayım, əvəz edim, yoxsa adları birləşdirim?"*: **Köhnəni saxla / Əvəz et / Birləşdir** |
-| *"Əli, telefon kontaktlarımı əlavə et"* | Telefon kontaktları ekranı açılır: axtarış, seçim. Bir nömrə telefonda bir neçə adla yazılıbsa, hansı adla saxlanacağını soruşur, digər adlar ləqəb kimi qalır |
-| *"Əli, Kamranla söhbəti aç"* | WhatsApp söhbətini açır. Sonra *"Əli, ekranı oxu"* ilə oxumaq olar. Oxunan söhbətdə *"ona yaz ki gəlirəm"* həmin adama cavab yazır |
-| *"Əli, mesajlarımı oxu"*, *"kim yazıb?"* | Son gələn mesajları oxuyur (kimdən, hansı tətbiqdən, nə vaxt). Sonra *"nə vaxt gələcək?"* kimi davam suallarına həmin mesajlardan cavab verir |
-| *"Əli, sabah səhər 7-də oyat"*, *"hər gün axşam 9-da dərmanımı xatırlat"*, *"10 dəqiqədən sonra zəng çal"* | Zəngli saat qurur. Vaxt gələndə ekrana çıxır, nə üçün olduğunu deyir və çalır: **Söndür** / **5 dəqiqə sonra** |
-| *"Zəngli saatlarım hansılardır?"*, *"axşamkı xatırlatmanı sil"*, *"bütün zəngli saatları sil"* | Siyahını oxuyur, birini və ya hamısını silir. Siyahı ⚙️ → **⏰ Zəngli saatlar** bölməsində də görünür |
-| *"Əli, dili ingilis dilinə dəyiş"*, *"switch to Azerbaijani"* | Dili səslə dəyişir |
-| İstənilən tətbiqdə: *"Əli, ekranı oxu"*, *"Əli, ekranda kim yazıb?"* | Ekranı oxuyur və izah edir: kim nə yazıb, məbləğ, tarix. Rus və ingilis mətnini tərcümə edir, kod və ya pul istəyi görsə, xəbərdarlıq edir |
-| *"Bu dərman nə üçündür?"*, *"Bu nədir?"* | Kamera açılır, *"Kameranı tutun, şəkil çəkirəm"* deyir, özü şəkil çəkir və **həmin suala** cavab verir |
-| Kamera ekranında: *"Bəs gündə neçə dəfə içim?"*, *"Son istifadə tarixi keçib?"* | Yeni şəkil çəkir. Əvvəlki cavabları yadda saxlayır, ona görə qısa davam sualları da başa düşülür |
-| *"Kameranı aç"* | Kamera açılır və sualınızı gözləyir (**🎤 Soruş** və ya **📷 Oxu**) |
-| Kamera ekranında: *"Bağla"* | Ana ekrana qayıdır |
-| *"Nə edə bilirsən?"* | Bacardıqlarını sadalayır |
-| İstənilən başqa sual | Süni intellekt qısa cavab verir |
+| *"Əli"* … *"nəvəmə yaz: salam"* (*"Ali… text my grandson: hello"*) | *"Bəli?"* ("Yes?") → *"Kimə yazım: Murada, yoxsa Aysuya?"* ("Who should I write to: Murad or Aysu?") → *"Murada"* → *"Murada «Salam» yazım?"* ("Send «Hello» to Murad?") → *"Hə"* ("Yes") → sent on WhatsApp |
+| *"Əli, nəvəmə yaz: salam"* (all in one breath) | Skips "Bəli?" and goes straight to *"Kimə yazım…"* |
+| *"Qızıma de ki axşam gəlsin"* (*"Tell my daughter to come in the evening"*) | *"Leylaya «Axşam gəlsin» yazım?"* ("Send «Come in the evening» to Leyla?") |
+| *"Əli, qızıma WhatsApp-dan salam yaz və göndər"* (*"Ali, text my daughter hello on WhatsApp and send it"*) | *"Leylaya «Salam» yazım?"*: the words "və göndər" and "WhatsApp-dan" are not included in the message |
+| *"Oğluma zəng et"* (*"Call my son"*) | Makes the call |
+| *"Əli, WhatsApp-dan Kamrana yaz ki sabah görüşək"* (*"Ali, text Kamran on WhatsApp that we'll meet tomorrow"*) | Writes to any contact not in the family list: first it looks in the phone's contacts, then searches WhatsApp. *"Ailə qrupuna yaz: axşam gəlin"* ("Write to the family group: come in the evening") works for groups too. It asks for confirmation before sending |
+| *"Əli, Rauf adlı yeni kontakt saxla, nömrəsi sıfır əlli, yüz iyirmi üç, qırx beş, altmış yeddi"* (*"Ali, save a new contact named Rauf, number 050 123 45 67"*) | Reads the number back (*"Rauf, 050 123 45 67. Yadda saxlayım?"* — "Shall I save it?"), then saves it after "hə" (yes). If the phone integration is on, it also saves to the phone's contacts. If the name or number is missing, it asks for it |
+| The number already exists under another name | *"Bu nömrə artıq «Murad» adı ilə var. Köhnəni saxlayım, əvəz edim, yoxsa adları birləşdirim?"* ("This number is already saved as Murad. Keep the old one, replace it, or merge the names?"): **Keep old / Replace / Merge** |
+| *"Əli, telefon kontaktlarımı əlavə et"* (*"Ali, add my phone contacts"*) | Opens the phone's contacts screen: search and select. If one number is saved under several names on the phone, it asks which name to keep; the other names stay as nicknames |
+| *"Əli, Kamranla söhbəti aç"* (*"Ali, open the chat with Kamran"*) | Opens the WhatsApp chat. Then you can say *"Əli, ekranı oxu"* ("Ali, read the screen") to have it read. In the read chat, *"ona yaz ki gəlirəm"* ("tell him I'm coming") replies to that person |
+| *"Əli, mesajlarımı oxu"*, *"kim yazıb?"* (*"Ali, read my messages"*, *"who wrote?"*) | Reads the latest incoming messages (who sent them, from which app, and when). Follow-up questions such as *"nə vaxt gələcək?"* ("when will they come?") are answered from those messages |
+| *"Əli, sabah səhər 7-də oyat"*, *"hər gün axşam 9-da dərmanımı xatırlat"*, *"10 dəqiqədən sonra zəng çal"* (*"Ali, wake me at 7 tomorrow morning"*, *"remind me to take my medicine at 9 every evening"*, *"ring in 10 minutes"*) | Sets an alarm. When the time comes, it appears on the screen, says what it is for, and rings: **Turn off** / **Snooze 5 min** |
+| *"Zəngli saatlarım hansılardır?"*, *"axşamkı xatırlatmanı sil"*, *"bütün zəngli saatları sil"* (*"What are my alarms?"*, *"delete the evening reminder"*, *"delete all alarms"*) | Reads the list, then deletes one or all of them. The list is also shown under ⚙️ → **⏰ Alarms** |
+| *"Əli, dili ingilis dilinə dəyiş"*, *"switch to Azerbaijani"* | Changes the language by voice |
+| In any app: *"Əli, ekranı oxu"*, *"Əli, ekranda kim yazıb?"* (*"Ali, read the screen"*, *"who wrote on the screen?"*) | Reads the screen and explains it: who wrote what, amounts, dates. Translates Russian and English text, and warns you if it sees a request for a code or money |
+| *"Bu dərman nə üçündür?"*, *"Bu nədir?"* (*"What is this medicine for?"*, *"What is this?"*) | Opens the camera, says *"Kameranı tutun, şəkil çəkirəm"* ("Hold the camera, I'm taking a photo"), takes a photo itself, and answers **that question** |
+| On the camera screen: *"Bəs gündə neçə dəfə içim?"*, *"Son istifadə tarixi keçib?"* (*"And how many times a day should I take it?"*, *"Has it expired?"*) | Takes a new photo. It remembers earlier answers, so short follow-up questions are understood |
+| *"Kameranı aç"* (*"Open the camera"*) | Opens the camera and waits for your question (**🎤 Ask** or **📷 Read**) |
+| On the camera screen: *"Bağla"* (*"Close"*) | Returns to the home screen |
+| *"Nə edə bilirsən?"* (*"What can you do?"*) | Lists what it can do |
+| Any other question | The AI gives a short answer |
 
-- Təsdiq suallarında ekranda iri **✅ Hə / ❌ Yox** düymələri də çıxır.
-- Kamerada: fokus üçün ekrana toxunun, yaxınlaşdırmaq üçün iki barmaqla böyüdün. Telefonda fənər varsa, **🔦 İşıq** düyməsi çıxır.
-- **Gələn bildirişlər** (WhatsApp, SMS, Telegram, Viber mesajları, buraxılmış zənglər, xatırlatmalar) gələn kimi səsli oxunur: *"Yeni mesaj, WhatsApp. Murad: …"*. Əli danışanda, siz danışanda, zəng zamanı və «Narahat etməyin» rejimində susur. ⚙️ → «Gələn mesajları və bildirişləri səsli oxu» ilə söndürülür.
-- **WhatsApp söhbətində** *"Əli, ekranı oxu"* deyəndə hər mesajın kimdən olduğu, saatı və sizin yazdıqlarınız ayrıca oxunur, sonra davam sualları vermək olar.
-- Səs-küylü zalda **⌨️ Yazaraq əmr ver** sahəsindən istifadə edin. Diakritik işarələr məcburi deyil: `neveme yaz salam` da işləyir.
+- For yes/no questions, large **✅ Yes / ❌ No** buttons also appear on the screen.
+- In the camera: tap the screen to focus, and pinch with two fingers to zoom. If the phone has a flashlight, the **🔦 Light** button appears.
+- **Incoming notifications** (WhatsApp, SMS, Telegram, Viber messages, missed calls, reminders) are read aloud as they arrive: *"New message, WhatsApp. Murad: …"*. Ali stays silent while it is speaking, while you are speaking, during a call, and in "Do not disturb" mode. You can turn this off with ⚙️ → "Read incoming messages and notifications aloud".
+- **In a WhatsApp chat**, when you say *"Əli, ekranı oxu"*, each message is read with its sender, its time and your own messages separately. Then you can ask follow-up questions.
+- In a noisy place, use the **⌨️ Type a command** field. Azerbaijani diacritics are not required: `neveme yaz salam` works too.
 
-## Dizayn
+## Design
 
-Tətbiqin görünüşü [taste skill](https://github.com/Leonxlnx/taste-skill) ilə qurulub: proqram təminatı üçün seçilmiş «Frost and slate» palitrası (açıq fon, tünd boz-mavi mətn, bir firuzəyi rəng), Chivo şrifti (Google Fonts, OFL, `assets/licenses/Chivo-OFL.txt`) və hər yerdə eyni kart, eyni düymə cütü, eyni künc ölçüsü. İkonlar Material Symbols Rounded-dır (Apache 2.0), kodda yol məlumatı kimi saxlanılır (`ui/AppIcons.kt`). Yaşlılar üçün böyük şrift, yüksək kontrast və ən azı 56 dp toxunma sahəsi saxlanılıb.
+The app's look was built with the [taste skill](https://github.com/Leonxlnx/taste-skill). It uses the "Frost and slate" palette chosen for software (light background, dark blue-grey text, one turquoise accent), the Chivo font (Google Fonts, OFL, `assets/licenses/Chivo-OFL.txt`), and the same card, button pair and corner size throughout. The icons are Material Symbols Rounded (Apache 2.0) and are stored as path data in the code (`ui/AppIcons.kt`). Large text, high contrast and touch targets of at least 56 dp are kept for older users.
 
-## Dil: Azərbaycanca / English
+## Language: Azerbaijani / English
 
-⚙️ → **🌐 Dil / Language** bölməsində **English** seçin. Ekran yazıları, Əlinin səsi (telefonun ingilis səsi), nitq tanıma və süni intellektin cavabları ingiliscəyə keçir. Azərbaycan dili standart olaraq qalır, seçim yadda saxlanılır.
+Under ⚙️ → **🌐 Dil / Language**, select **English**. Screen text, Ali's voice (the phone's English voice), speech recognition and the AI's answers all switch to English. Azerbaijani stays the default, and the choice is remembered.
 
 | English | What happens |
 |---|---|
 | *"Ali"* … *"text my daughter that I'll be late"* | *"Send «I'll be late» to Leyla?"* → *"Yes"* → sent on WhatsApp |
 | *"Ali, text my grandson hello"* | *"Who should I write to: Murad or Aysu?"* → *"the second one"* |
-| *"Ali, what is this medicine?"* | Camera opens, takes a photo, answers in English |
+| *"Ali, what is this medicine?"* | The camera opens, takes a photo, and answers in English |
 | *"Ali, read the screen"* | Reads the current screen, translating Azerbaijani or Russian text |
-| *"Call my son"*, *"What can you do?"* | Calls, lists what it can do |
+| *"Call my son"*, *"What can you do?"* | Makes the call, lists what it can do |
 
-- Kontaktlardakı `nəvəm`, `qızım`, `oğlum` kimi sözlər ingiliscə də tanınır: *my grandson*, *my daughter*, *my son*.
-- İngiliscə mesaj və zəng əmrlərini süni intellekt başa düşür, ona görə server lazımdır. «Yes/No», kamera, ekran və «help» serversiz də işləyir.
-- «Əli» sözünü yenə eyni model tanıyır, ingiliscə «Ali» kimi deyin.
-- Azure səsi yalnız Azərbaycan dilindədir. İngiliscə rejimdə həmişə telefonun öz səsi danışır.
+- Words such as `nəvəm`, `qızım` and `oğlum` in the contacts are also recognized in English: *my grandson*, *my daughter*, *my son*.
+- The AI understands English messaging and call commands, so the server is required for them. "Yes/No", the camera, the screen and "help" work without a server.
+- The same model recognizes the word "Əli" in English mode too, so say "Ali" in English.
+- The Azure voice is Azerbaijani only. In English mode, the phone's own voice always speaks.
 
-## «Əli» deyəndə özü işə düşməsi (Siri kimi)
+## Waking Ali by voice (like Siri)
 
-- Tətbiq bir dəfə açılandan sonra arxa fonda "Əli" sözünü gözləyir. Ekranda **«Əli» deyin** yazısı görünür.
-- Telefonun üst panelində bildiriş və yaşıl mikrofon nöqtəsi görünür. Android arxa fonda dinləyən hər tətbiqdən bunu tələb edir.
-- Tətbiq bağlı və ya arxa fonda olsa da, "Əli" deyəndə özü ekrana gəlir və *"Bəli?"* deyir.
-- Ad **telefonun içində, internetsiz** tanınır: kiçik oflayn model (Vosk). Azərbaycan dili üçün model olmadığından türk modelindən istifadə olunur, o "Əli" sözünü "ali / eli" kimi eşidir. Səs serverə yalnız ad eşidiləndən **sonra** gedir.
-- Ad cümlənin əvvəlində olmalıdır: *"Onun əli ağrıyır"* və ya *"Allah razı olsun"* tətbiqi oyatmır.
-- Söndürmək üçün: ⚙️ → **«Əli» deyəndə özü işə düşsün** açarı, ya da bildirişdəki **Söndür** düyməsi.
-- Köməkçinin adını dəyişsəniz (⚙️ → Köməkçinin adı), yeni adı gözləyir. Adı türk modeli tanımalıdır: Ayla, Leyla, Xanım kimi geniş yayılmış adlar işləyir.
-- Danışarkən və sizi dinləyərkən adı gözləmir, ona görə öz səsi ilə "Əli" deyəndə özünü oyatmır.
+- After the app is opened once, it listens for the word "Ali" in the background. The screen shows **Say "Əli"**.
+- The phone's status bar shows a notification and a green microphone dot. Android requires this for any app that listens in the background.
+- Even when the app is closed or in the background, saying "Əli" brings it to the screen, and it says *"Bəli?"* ("Yes?").
+- The wake word is recognized **on the phone, without internet**, by a small offline model (Vosk). There is no Azerbaijani model, so a Turkish model is used, which hears "Əli" as "ali" / "eli". Audio is sent to the server only **after** the name is heard.
+- The name must be at the start of the sentence. *"Onun əli ağrıyır"* ("His hand hurts") or *"Allah razı olsun"* ("God bless you") will not wake the app.
+- To turn it off: ⚙️ → **Wake up by saying "Əli"** switch, or the **Turn off** button in the notification.
+- If you change the assistant's name (⚙️ → Assistant name), it listens for the new name. The model must recognize the name: common names such as Ayla, Leyla and Xanım work.
+- While Ali is speaking or listening to you, it does not listen for the name, so your own voice saying "Əli" does not wake it.
 
-## Danışmadan yoxlamaq (emulyator)
+## Testing without speaking (emulator)
 
-Əmri iki qat dırnağın içində yazın, yoxsa telefon onu ilk boşluqda kəsir:
+Put the command in double quotes, or the phone cuts it off at the first space:
 
 ```bash
 adb shell "am start -n az.nvaton.komekci/.MainActivity --es command 'nəvəmə yaz salam'"
 ```
 
-Kamera ilə sual (kamera açılır, şəkil çəkir, cavab verir):
+A camera question (opens the camera, takes a photo, and answers):
 
 ```bash
 adb shell "am start -n az.nvaton.komekci/.MainActivity --es command 'bu nədir?'"
 ```
 
-"Əli" eşidilmiş kimi davranmaq:
+Pretend that "Əli" was heard:
 
 ```bash
 adb shell am start -n az.nvaton.komekci/.MainActivity --ez simulate_wake true
 ```
 
-Dinləməni və danışmanı dayandırmaq:
+Stop listening and speaking:
 
 ```bash
 adb shell am start -n az.nvaton.komekci/.MainActivity --ez stop true
 ```
 
-Oyanma sözünü səs faylı ilə yoxlamaq (16 kHz mono WAV, mikrofon bunu eşitmiş kimi):
+Test the wake word with an audio file (16 kHz mono WAV, as if the microphone heard it):
 
 ```bash
 adb exec-in run-as az.nvaton.komekci sh -c 'cat > files/ali.wav' < ali.wav
@@ -223,27 +223,27 @@ adb exec-in run-as az.nvaton.komekci sh -c 'cat > files/ali.wav' < ali.wav
 adb shell am start -n az.nvaton.komekci/.MainActivity --es wake_test ali.wav
 ```
 
-Ekran oxumanı mikrofonsuz yoxlamaq: tətbiq kənara çəkilir, arxadakı ekranı oxuyur, sonra «ekranı oxu» deyilmiş kimi davam edir:
+Test screen reading without a microphone: the app moves aside, reads the screen behind it, then continues as if "read the screen" had been said:
 
 ```bash
 adb shell am start -n az.nvaton.komekci/.MainActivity --ez screen_test true
 ```
 
-Modelin nə eşitdiyini görmək:
+See what the model hears:
 
 ```bash
 adb logcat -s WakeWord
 ```
 
-Fırıldaq SMS-i göndərmək (yalnız emulyatorda):
+Send a scam SMS (emulator only):
 
 ```bash
 adb emu sms send 5551234 "Hörmətli müştəri, kartınız bloklanıb. Kodu bu nömrəyə göndərin"
 ```
 
-Real telefonda isə ⚙️ → **Fırıldaq xəbərdarlığını yoxla** düyməsi var.
+On a real phone, use ⚙️ → **Check for scam warnings**.
 
-## Testlər
+## Tests
 
 ```bash
 cd backend && npm test
@@ -253,43 +253,43 @@ cd backend && npm test
 cd android && ./gradlew testDebugUnitTest
 ```
 
-## Problemlər
+## Troubleshooting
 
-| Problem | Həll |
+| Problem | Solution |
 |---|---|
-| `No connected devices!` | Telefon qoşulmayıb və ya emulyator açıq deyil. 2-ci bölmənin b) addımına baxın, `adb devices` ilə yoxlayın |
-| `zsh: command not found: adb` | `adb` PATH-də deyil: 2-ci bölmənin a) addımı |
-| `EADDRINUSE: address already in use :::8787` | Server artıq başqa terminalda işləyir. Birini Ctrl+C ilə dayandırın |
-| "Serverə qoşula bilmədim" | Server işləyir? `adb reverse tcp:8787 tcp:8787` icra olunub? ⚙️ → Server → "Yadda saxla və yoxla" |
-| "Süni intellekt hələ qoşulmayıb" | `backend/.env`-də `GEMINI_API_KEY` yoxdur və ya səhvdir (serverin terminalına baxın) |
-| Server logunda `429` / `rate limit` | Gemini-nin pulsuz planının limiti dolub: bir az gözləyin və ya Google AI Studio-da ödənişli plana keçin |
-| Nitq tanıma Azərbaycan dilini başa düşmür | `backend/.env`-ə Gemini (və ya Azure) açarını əlavə edin: tətbiq avtomatik serverin nitq tanımasına keçir (⚙️ → «Serverin nitq tanıması» açıq olmalıdır). Ya da yazaraq əmr verin |
-| Əli türk ləhcəsi ilə danışır | Telefonda Azərbaycan səsi yoxdur. Backend-ə Azure açarını əlavə edin |
-| WhatsApp açılır, amma mesaj öz-özünə getmir | Əlçatımlılıq xidməti aktiv deyil (4-cü bölmə). Nömrə beynəlxalq formatda olmalıdır: `+994...` |
-| "Əli" deyəndə işə düşmür | ⚙️ → «Əli» deyəndə özü işə düşsün: "✅ Adınızı gözləyir" yazılmalıdır. "Model tətbiqə daxil edilməyib" yazılıbsa: `scripts/get-wake-model.sh`, sonra tətbiqi yenidən yükləyin. Emulyatorda Mac mikrofonu açıq olmalıdır (`scripts/emulator.sh`). Telefona yaxından, aydın deyin, adı deyib bir anlıq dayanın. `adb logcat -s WakeWord` modelin nə eşitdiyini göstərir |
-| Zəngli saat çalanda ekran açılmır, yalnız bildiriş görünür | ⚙️ → Quraşdırma → «⏰ Zəngli saat bütün ekranda» → Aç (Android 14+). Xiaomi-də Tətbiqlər → Köməkçi → **Avtomatik başlama** açıq olsun |
-| Telefon kontaktları görünmür | ⚙️ → Ailə kontaktları → «Telefon kontaktları ilə inteqrasiya» açarını yandırın və icazə verin. Sonra «Telefondan əlavə et» |
-| "Kamrana yaz" deyəndə adamı tapmır | ⚙️ → Quraşdırma → «Kontaktlar: istənilən adama yazmaq» → Aç. Kontaktda olmayan adlar və qruplar WhatsApp axtarışı ilə tapılır: bunun üçün əlçatımlılıq açıq olmalıdır |
-| Gələn mesajları oxumur | ⚙️ → Quraşdırma → «🔔 Bildirişlər» ✅ olmalıdır və «Gələn mesajları… səsli oxu» açıq olmalıdır. «Narahat etməyin» rejimində oxumur |
-| "Əli, ekranı oxu" deyəndə "Oxumaq istədiyiniz ekranı açın" deyir | Ekran adı çağırdığınız anda götürülür. Köməkçini əvvəlcə özünüz açsanız, ekranda Köməkçinin özü olur. Lazım olan tətbiqdə «Əli, ekranı oxu» deyin |
-| Emulyatorda «Əli» bir müddət sonra eşitmir | Emulyatorun Mac mikrofonu bir-iki dəqiqədən sonra kəsilir: `adb logcat -s WakeWord`-da `peak 0` və ya dəyişməyən `peak 23191` (süni ton) görünür. Emulyatoru `scripts/emulator.sh` ilə yenidən açın. Real telefonda bu yoxdur |
-| Emulyatorda kamera otaq şəkli göstərir | Emulyator `scripts/emulator.sh` ilə açılmayıb. Ya da Android Studio → Device Manager → ✏️ → Camera → Back: **Webcam0** |
-| Emulyatorda "Speech Recognition and Synthesis from Google keeps stopping" | Google-un telefondakı türk səsi Apple çipli Mac-in emulyatorunda çökür. Tətbiq bunu özü aşkar edir və bir neçə saniyəyə Google-un onlayn səsinə keçir: dialoqu bağlayın. Real telefonda və Azure səsi ilə bu problem yoxdur |
-| "Süni intellekt hazırda çox məşğuldur" | Gemini həmin anda yüklənib (503). Server avtomatik digər Gemini modelini sınayır, o da cavab verməsə, bir azdan yenidən soruşun |
+| `No connected devices!` | The phone is not connected, or the emulator is not running. See step 2b, and check with `adb devices` |
+| `zsh: command not found: adb` | `adb` is not in PATH: see step 2a |
+| `EADDRINUSE: address already in use :::8787` | The server is already running in another terminal. Stop one of them with Ctrl+C |
+| "Could not connect to the server" | Is the server running? Did you run `adb reverse tcp:8787 tcp:8787`? ⚙️ → Server → "Save and check" |
+| "The AI is not connected yet" | `GEMINI_API_KEY` is missing or wrong in `backend/.env` (check the server terminal) |
+| `429` / `rate limit` in the server log | The Gemini free-plan limit is used up: wait a bit, or upgrade to a paid plan in Google AI Studio |
+| Speech recognition does not understand Azerbaijani | Add a Gemini (or Azure) key to `backend/.env`. The app then switches to the server's speech recognition automatically (⚙️ → "Server speech recognition" must be on). Or type the command |
+| Ali speaks with a Turkish accent | The phone has no Azerbaijani voice. Add an Azure key to the backend |
+| WhatsApp opens, but the message is not sent by itself | Accessibility service is not enabled (section 4). The number must be in international format: `+994...` |
+| "Əli" does not wake the app | ⚙️ → "Wake up by saying Əli" must show "✅ Waiting for your name". If it says "Model not included in the app", run `scripts/get-wake-model.sh`, then reinstall the app. On the emulator, the Mac microphone must be on (`scripts/emulator.sh`). Speak close to the phone, clearly, and pause briefly after the name. `adb logcat -s WakeWord` shows what the model hears |
+| The alarm rings but the screen does not turn on, only a notification appears | ⚙️ → Setup → "⏰ Full-screen alarm" → Enable (Android 14+). On Xiaomi, make sure Apps → Köməkçi → **Autostart** is on |
+| Phone contacts are not shown | ⚙️ → Family contacts → turn on "Phone contacts integration" and allow it. Then "Add from phone" |
+| "Text Kamran" does not find the person | ⚙️ → Setup → "Contacts: write to anyone" → Enable. Contacts that are not in the family list and groups are found through WhatsApp search, which needs Accessibility enabled |
+| Incoming messages are not read | ⚙️ → Setup → "🔔 Notifications" must be ✅, and "Read incoming messages… aloud" must be on. It does not read during "Do not disturb" mode |
+| "Əli, read the screen" replies "Please open the screen you want to read" | The screen name is captured when you say the command. If you opened Köməkçi yourself first, the screen is Köməkçi itself. Open the app you need and say "Əli, read the screen" there |
+| On the emulator, "Əli" stops hearing after a while | The emulator's Mac microphone cuts out after a minute or two: `adb logcat -s WakeWord` shows `peak 0`, or an unchanging `peak 23191` (a synthetic tone). Restart the emulator with `scripts/emulator.sh`. This does not happen on a real phone |
+| On the emulator, the camera shows a room | The emulator was not started with `scripts/emulator.sh`. Or in Android Studio → Device Manager → ✏️ → Camera → Back: **Webcam0** |
+| On the emulator, "Speech Recognition and Synthesis from Google keeps stopping" | Google's Turkish voice crashes on the emulator of an Apple-chip Mac. The app detects this itself and switches to Google's online voice within a few seconds: close the dialog. This problem does not happen on a real phone or with the Azure voice |
+| "The AI is very busy right now" | Gemini is overloaded at that moment (503). The server automatically tries another Gemini model. If that also fails, ask again in a moment |
 
-## Təhlükəsizlik
+## Security
 
-- API açarları yalnız `backend/.env`-dədir, APK-da yoxdur.
-- Əlçatımlılıq xidməti yalnız WhatsApp-da düymə basır və yalnız səslə təsdiq olunan mesajı 20 saniyə ərzində göndərir. Mətn qutusundakı yazı təsdiq olunan mətnlə eyni deyilsə, heç nə basmır.
-- Gələn bildirişlər yalnız telefonda səsləndirilir. Son mesajlar «mesajlarımı oxu» üçün 3 saata qədər yalnız yaddaşda saxlanılır (diskdə yox). Davam sualı verəndə (məs. «nə vaxt gələcək?») həmin mesajlar və ya ekran mətni cavab üçün serverə gedir.
-- Telefon kontaktları ilə inteqrasiya yalnız istifadəçi razılıq verəndən sonra açılır (Tənzimləmələr və ya idxal ekranı), istənilən vaxt söndürülür.
-- Telefonun kontaktları yalnız telefonda axtarılır, serverə getmir. Server yalnız dediyiniz adı görür (məs. «Kamran»).
-- Zəngli saatlar telefonda saxlanılır. Server yalnız əmri başa düşmək üçün siyahının saatlarını və etiketlərini görür.
-- Dil seçimi serverə hər sorğu ilə `language: "az" | "en"` kimi gedir, başqa heç nə dəyişmir.
-- Ekran yalnız «Əli» deyiləndə götürülür, 3 dəqiqə yalnız yaddaşda qalır, şifrə sahələri oxunmur. Mətn serverə (Gemini) yalnız «ekranı oxu» deyəndə gedir.
-- Fırıldaq yoxlaması əvvəl telefonda gedir. Serverə yalnız şübhəli mesajlar göndərilir.
-- Serverin nitq tanıması işləyəndə səs yalnız mikrofon düyməsi basılandan və ya "Əli" deyiləndən sonra, sükut olana qədər yazılır və tanınmaq üçün serverə (Gemini və ya Azure) göndərilir. Heç yerdə saxlanılmır.
-- "Əli" sözünü gözləyərkən səs yalnız telefonun içində emal olunur və heç yerə göndərilmir.
-- Kameranın şəkli yalnız sual veriləndə və ya **Oxu** basılanda çəkilir və cavab üçün serverə göndərilir.
-- Gemini-nin pulsuz planında Google sorğuları öz məhsullarını yaxşılaşdırmaq üçün istifadə edə bilər. Real istifadəçilərin mesajları üçün ödənişli plana keçin.
-- Claude seçiləndə (`AI_PROVIDER=claude`) server tərəfli `fallbacks: "default"` aktivdir: təhlükəsizlik filtri sorğunu rədd etsə, API onu avtomatik olaraq tövsiyə olunan modeldə yenidən icra edir.
+- API keys are only in `backend/.env`, not in the APK.
+- The Accessibility service only presses the button in WhatsApp, and only sends a message that was confirmed by voice, within 20 seconds. If the text in the input box differs from the confirmed text, it presses nothing.
+- Incoming notifications are only read aloud on the phone. Recent messages are kept in memory only, for up to 3 hours (never on disk), for the "read my messages" feature. When you ask a follow-up question (for example, "when will they come?"), those messages or the screen text are sent to the server to answer it.
+- Phone contacts integration is only turned on after the user agrees (in Settings or the import screen), and can be turned off at any time.
+- Phone contacts are searched only on the phone and are not sent to the server. The server only sees the name you said (for example, "Kamran").
+- Alarms are stored on the phone. The server sees only the alarm times and labels, so it can understand the command.
+- The language choice is sent to the server with each request as `language: "az" | "en"`. Nothing else changes.
+- The screen is only read when "Ali" is said, and is kept in memory for 3 minutes. Password fields are not read. Text is sent to the server (Gemini) only when you say "read the screen".
+- The scam check runs on the phone first. Only suspicious messages are sent to the server.
+- When server speech recognition is working, audio is recorded only after the microphone button is pressed or "Ali" is said, until silence, and is sent to the server (Gemini or Azure) for recognition. It is not stored anywhere.
+- While waiting for the word "Ali", audio is processed only inside the phone and is never sent anywhere.
+- The camera image is taken only when you ask a question or press **Read**, and is sent to the server for the answer.
+- On Gemini's free plan, Google may use requests to improve its products. Use a paid plan for real users' messages.
+- When Claude is selected (`AI_PROVIDER=claude`), the server-side `fallbacks: "default"` option is on: if the safety filter rejects a request, the API automatically retries it on the recommended model.
