@@ -293,3 +293,7 @@ cd android && ./gradlew testDebugUnitTest
 - The camera image is taken only when you ask a question or press **Read**, and is sent to the server for the answer.
 - On Gemini's free plan, Google may use requests to improve its products. Use a paid plan for real users' messages.
 - When Claude is selected (`AI_PROVIDER=claude`), the server-side `fallbacks: "default"` option is on: if the safety filter rejects a request, the API automatically retries it on the recommended model.
+
+## Achievements
+
+- **YUNEX 2026 (Quba, Azerbaijan), innovation & startup hackathon:** NVATON finished **4th out of 20 finalist teams** with 416 of 500 points. Official confirmation: [docs/YUNEX-2026-Achievement-Confirmation.pdf](docs/YUNEX-2026-Achievement-Confirmation.pdf)
